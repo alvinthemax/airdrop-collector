@@ -1,18 +1,18 @@
 {
   "items": [
     {
-      "title": "Contoh Airdrop",
+      "title": "Welcome",
       "steps": [
         {
-          "text": "Daftar di website resmi",
-          "link": "https://contoh.com/daftar"
+          "text": "official website",
+          "link": "https://airdrop-collector.vercel.app/"
         },
         {
-          "text": "Verifikasi email",
+          "text": "post your airdrop here",
           "link": ""
         }
       ],
-      "info": "Airdrop berakhir pada 30 Desember 2025",
+      "info": "Airdrop is on the way",
       "createdAt": "2025-01-01T00:00:00.000Z"
     }
   ]
