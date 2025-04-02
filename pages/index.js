@@ -3,7 +3,9 @@ import axios from 'axios';
 import styles from '../styles/Home.module.css';
 
 export default function Home() {
-  const [inputValue, setInputValue] = useState('');
+  const [title, setTitle] = useState('');
+  const [steps, setSteps] = useState([{ text: '', link: '' }]);
+  const [info, setInfo] = useState('');
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -17,25 +19,61 @@ export default function Home() {
     token: process.env.NEXT_PUBLIC_GITHUB_TOKEN,
   };
 
-  // Fetch data from GitHub
+  // Fetch data with proper error handling
   const fetchData = async () => {
     try {
       const response = await axios.get(
         `https://api.github.com/repos/${repoConfig.owner}/${repoConfig.repo}/contents/${repoConfig.path}`,
-        { headers: { Authorization: `token ${repoConfig.token}` } }
+        {
+          headers: {
+            Authorization: `token ${repoConfig.token}`,
+            Accept: 'application/vnd.github.v3+json'
+          }
+        }
       );
+
+      // Decode and verify data structure
       const content = JSON.parse(atob(response.data.content));
-      setItems(content.items || []);
+      if (!content.items) {
+        console.warn('No items array found, initializing new structure');
+        content.items = [];
+      }
+      
+      setItems(content.items);
+      console.log('Data loaded:', content.items); // Debug log
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Failed to fetch data:', error);
+      setMessage(`Failed to load data: ${error.response?.status === 404 
+        ? 'File not found' 
+        : error.message}`);
       setItems([]);
     }
   };
 
-  // Handle form submission
+  // Handle step modifications
+  const handleStepChange = (stepIndex, field, value) => {
+    const updatedSteps = steps.map((step, idx) => 
+      idx === stepIndex ? { ...step, [field]: value } : step
+    );
+    setSteps(updatedSteps);
+  };
+
+  const addStep = () => {
+    setSteps([...steps, { text: '', link: '' }]);
+  };
+
+  const removeStep = (stepIndex) => {
+    if (steps.length <= 1) return;
+    setSteps(steps.filter((_, idx) => idx !== stepIndex));
+  };
+
+  // Submit handler with proper data validation
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!title.trim()) {
+      setMessage('❌ Title is required');
+      return;
+    }
 
     setIsLoading(true);
     setMessage('');
@@ -44,178 +82,210 @@ export default function Home() {
       // Get current file
       const currentFile = await axios.get(
         `https://api.github.com/repos/${repoConfig.owner}/${repoConfig.repo}/contents/${repoConfig.path}`,
-        { headers: { Authorization: `token ${repoConfig.token}` } }
+        {
+          headers: {
+            Authorization: `token ${repoConfig.token}`,
+            Accept: 'application/vnd.github.v3+json'
+          }
+        }
       );
 
       // Prepare new content
-      const currentContent = JSON.parse(atob(currentFile.data.content));
+      const currentContent = JSON.parse(atob(currentFile.data.content)) || { items: [] };
       const newItem = {
-        title: inputValue,
-        steps: [{ text: 'Initial step', link: '' }],
-        info: '',
+        title,
+        steps: steps.filter(step => step.text.trim() !== ''),
+        info,
         createdAt: new Date().toISOString()
       };
-      
+
       const newContent = {
         ...currentContent,
-        items: [...(currentContent.items || []), newItem]
+        items: [...currentContent.items, newItem]
       };
 
       // Update file
       await axios.put(
         `https://api.github.com/repos/${repoConfig.owner}/${repoConfig.repo}/contents/${repoConfig.path}`,
         {
-          message: `Add new item: ${inputValue.substring(0, 20)}...`,
+          message: `Add airdrop: ${title.substring(0, 20)}`,
           content: btoa(JSON.stringify(newContent, null, 2)),
           sha: currentFile.data.sha,
-          branch: repoConfig.branch,
+          branch: repoConfig.branch
         },
-        { headers: { Authorization: `token ${repoConfig.token}` } }
+        {
+          headers: {
+            Authorization: `token ${repoConfig.token}`,
+            Accept: 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          }
+        }
       );
 
-      setInputValue('');
-      setMessage('✅ Item added successfully!');
-      fetchData();
+      // Reset form and refresh data
+      setTitle('');
+      setSteps([{ text: '', link: '' }]);
+      setInfo('');
+      await fetchData(); // Explicitly refresh data
+      setMessage('✅ Airdrop added successfully!');
     } catch (error) {
-      console.error('Error:', error);
-      setMessage(`❌ Error: ${error.response?.data?.message || error.message}`);
+      console.error('Submission error:', error);
+      setMessage(`❌ Failed to add: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle step modifications
-  const handleStepChange = (itemIndex, stepIndex, field, value) => {
-    const updatedItems = [...items];
-    updatedItems[itemIndex].steps[stepIndex][field] = value;
-    setItems(updatedItems);
-  };
-
-  const addStep = (itemIndex) => {
-    const updatedItems = [...items];
-    updatedItems[itemIndex].steps.push({ text: '', link: '' });
-    setItems(updatedItems);
-  };
-
-  const removeStep = (itemIndex, stepIndex) => {
-    if (items[itemIndex].steps.length <= 1) return;
-    const updatedItems = [...items];
-    updatedItems[itemIndex].steps.splice(stepIndex, 1);
-    setItems(updatedItems);
-  };
-
-  // Initial data fetch
-  useEffect(() => { fetchData(); }, []);
+  // Initial data load
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <div className={styles.container}>
-      {/* Header */}
       <header className={styles.header}>
         <h1>Public Airdrop Collection</h1>
       </header>
 
       <div className={styles.mainContent}>
-        {/* Left Side - Editor */}
+        {/* Editor Section */}
         <div className={styles.editorSection}>
           <form onSubmit={handleSubmit} className={styles.form}>
             <h2>Add New Airdrop</h2>
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Airdrop title..."
-              className={styles.input}
-              required
-            />
+            
+            <div className={styles.formGroup}>
+              <label>Title *</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Airdrop title"
+                required
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Steps</label>
+              {steps.map((step, index) => (
+                <div key={index} className={styles.stepRow}>
+                  <input
+                    type="text"
+                    value={step.text}
+                    onChange={(e) => handleStepChange(index, 'text', e.target.value)}
+                    placeholder="Step description"
+                    required
+                  />
+                  <input
+                    type="url"
+                    value={step.link}
+                    onChange={(e) => handleStepChange(index, 'link', e.target.value)}
+                    placeholder="Link (optional)"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeStep(index)}
+                    disabled={steps.length <= 1}
+                    className={styles.stepButton}
+                  >
+                    −
+                  </button>
+                  {index === steps.length - 1 && (
+                    <button
+                      type="button"
+                      onClick={addStep}
+                      className={styles.stepButton}
+                    >
+                      +
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Additional Info</label>
+              <textarea
+                value={info}
+                onChange={(e) => setInfo(e.target.value)}
+                placeholder="Any additional information..."
+                rows={3}
+              />
+            </div>
+
             <button 
               type="submit" 
-              className={styles.button}
+              className={styles.submitButton}
               disabled={isLoading}
             >
-              {isLoading ? 'Adding...' : 'Add Airdrop'}
+              {isLoading ? 'Submitting...' : 'Add Airdrop'}
             </button>
           </form>
+
           {message && (
-            <p className={message.startsWith('✅') ? styles.successMessage : styles.errorMessage}>
+            <div className={message.startsWith('✅') ? styles.successMessage : styles.errorMessage}>
               {message}
-            </p>
+            </div>
           )}
         </div>
 
-        {/* Right Side - Display */}
+        {/* Display Section */}
         <div className={styles.displaySection}>
-          <h2>Available Airdrops</h2>
-          <div className={styles.itemsContainer}>
-            {items.length > 0 ? (
-              items.map((item, itemIndex) => (
-                <div key={itemIndex} className={styles.itemBlock}>
-                  <h3 className={styles.itemTitle}>{item.title}</h3>
+          <h2>Available Airdrops ({items.length})</h2>
+          
+          {items.length > 0 ? (
+            <div className={styles.itemsGrid}>
+              {items.map((item, index) => (
+                <div key={index} className={styles.itemCard}>
+                  <h3>{item.title}</h3>
                   
-                  <div className={styles.stepsContainer}>
-                    <h4>Steps:</h4>
-                    {item.steps.map((step, stepIndex) => (
-                      <div key={stepIndex} className={styles.step}>
-                        <input
-                          type="text"
-                          value={step.text}
-                          onChange={(e) => handleStepChange(itemIndex, stepIndex, 'text', e.target.value)}
-                          placeholder="Step description"
-                          className={styles.stepInput}
-                        />
-                        <input
-                          type="url"
-                          value={step.link}
-                          onChange={(e) => handleStepChange(itemIndex, stepIndex, 'link', e.target.value)}
-                          placeholder="Step link (optional)"
-                          className={styles.stepInput}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeStep(itemIndex, stepIndex)}
-                          disabled={item.steps.length <= 1}
-                          className={styles.stepButton}
-                        >
-                          −
-                        </button>
-                        {stepIndex === item.steps.length - 1 && (
-                          <button
-                            type="button"
-                            onClick={() => addStep(itemIndex)}
-                            className={styles.stepButton}
-                          >
-                            +
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  {item.steps?.length > 0 && (
+                    <div className={styles.stepsList}>
+                      <h4>Steps:</h4>
+                      <ol>
+                        {item.steps.map((step, i) => (
+                          <li key={i}>
+                            {step.text}
+                            {step.link && (
+                              <a 
+                                href={step.link} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className={styles.stepLink}
+                              >
+                                (Link)
+                              </a>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
 
-                  <div className={styles.additionalInfo}>
-                    <h4>Additional Info:</h4>
-                    <textarea
-                      value={item.info}
-                      onChange={(e) => {
-                        const updatedItems = [...items];
-                        updatedItems[itemIndex].info = e.target.value;
-                        setItems(updatedItems);
-                      }}
-                      placeholder="Any additional information..."
-                      className={styles.infoTextarea}
-                    />
+                  {item.info && (
+                    <div className={styles.additionalInfo}>
+                      <h4>Notes:</h4>
+                      <p>{item.info}</p>
+                    </div>
+                  )}
+
+                  <div className={styles.itemMeta}>
+                    <small>Added: {new Date(item.createdAt).toLocaleDateString()}</small>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className={styles.noItems}>No airdrops available. Add one using the form.</p>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.emptyState}>
+              <p>No airdrops available yet</p>
+              <p>Add your first airdrop using the form</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Footer */}
       <footer className={styles.footer}>
         <p>Made with ♥️ by Alvin</p>
-        <p>© 2025 all rights reserved.</p>
+        <p>© 2025 All rights reserved</p>
       </footer>
     </div>
   );
