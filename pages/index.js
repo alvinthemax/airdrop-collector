@@ -40,7 +40,7 @@ export default function Home() {
       }
       
       setItems(content.items);
-      console.log('Data loaded:', content.items); // Debug log
+      console.log('Data loaded:', content.items);
     } catch (error) {
       console.error('Failed to fetch data:', error);
       setMessage(`Failed to load data: ${error.response?.status === 404 
@@ -126,7 +126,7 @@ export default function Home() {
       setTitle('');
       setSteps([{ text: '', link: '' }]);
       setInfo('');
-      await fetchData(); // Explicitly refresh data
+      await fetchData();
       setMessage('✅ Airdrop added successfully!');
     } catch (error) {
       console.error('Submission error:', error);
@@ -148,7 +148,7 @@ export default function Home() {
       </header>
 
       <div className={styles.mainContent}>
-        {/* Editor Section */}
+        {/* Editor Section - will reorder based on orientation */}
         <div className={styles.editorSection}>
           <form onSubmit={handleSubmit} className={styles.form}>
             <h2>Add New Airdrop</h2>
@@ -160,6 +160,7 @@ export default function Home() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Airdrop title"
+                className={styles.input}
                 required
               />
             </div>
@@ -173,6 +174,7 @@ export default function Home() {
                     value={step.text}
                     onChange={(e) => handleStepChange(index, 'text', e.target.value)}
                     placeholder="Step description"
+                    className={styles.input}
                     required
                   />
                   <input
@@ -180,6 +182,7 @@ export default function Home() {
                     value={step.link}
                     onChange={(e) => handleStepChange(index, 'link', e.target.value)}
                     placeholder="Link (optional)"
+                    className={styles.input}
                   />
                   <button
                     type="button"
@@ -208,13 +211,14 @@ export default function Home() {
                 value={info}
                 onChange={(e) => setInfo(e.target.value)}
                 placeholder="Any additional information..."
+                className={styles.textarea}
                 rows={3}
               />
             </div>
 
             <button 
               type="submit" 
-              className={styles.submitButton}
+              className={styles.button}
               disabled={isLoading}
             >
               {isLoading ? 'Submitting...' : 'Add Airdrop'}
@@ -228,29 +232,28 @@ export default function Home() {
           )}
         </div>
 
-        {/* Display Section */}
+        {/* Display Section - will reorder based on orientation */}
         <div className={styles.displaySection}>
           <h2>Available Airdrops ({items.length})</h2>
           
           {items.length > 0 ? (
-            <div className={styles.itemsGrid}>
+            <div className={styles.itemsContainer}>
               {items.map((item, index) => (
                 <div key={index} className={styles.itemCard}>
-                  <h3>{item.title}</h3>
+                  <h3 className={styles.itemTitle}>{item.title}</h3>
                   
                   {item.steps?.length > 0 && (
-                    <div className={styles.stepsList}>
+                    <div className={styles.stepsContainer}>
                       <h4>Steps:</h4>
                       <ol>
                         {item.steps.map((step, i) => (
-                          <li key={i}>
+                          <li key={i} className={styles.step}>
                             {step.text}
                             {step.link && (
                               <a 
                                 href={step.link} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className={styles.stepLink}
                               >
                                 (Link)
                               </a>
@@ -275,7 +278,7 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className={styles.emptyState}>
+            <div className={styles.noData}>
               <p>No airdrops available yet</p>
               <p>Add your first airdrop using the form</p>
             </div>
