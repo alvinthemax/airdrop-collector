@@ -1,43 +1,19 @@
 {
-  "title": "Airdrop Name",
-  "steps": [
-    {
-      "text": "Step 1",
-      "link": "https://example.com"
-    },
-    {
-      "text": "Step 2",
-      "link": ""
-    }
-  ],
-  "info": "Additional details",
-  "createdAt": "2025-01-01T00:00:00.000Z",
   "items": [
     {
-      "title": "tes",
+      "title": "Contoh Airdrop",
       "steps": [
         {
-          "text": "Initial step",
+          "text": "Daftar di website resmi",
+          "link": "https://contoh.com/daftar"
+        },
+        {
+          "text": "Verifikasi email",
           "link": ""
         }
       ],
-      "info": "",
-      "createdAt": "2025-04-02T21:04:27.617Z"
-    },
-    {
-      "title": "tes",
-      "steps": [
-        {
-          "text": "tes",
-          "link": "https://example.com"
-        },
-        {
-          "text": "tes2",
-          "link": "https://example.com"
-        }
-      ],
-      "info": "fsfsfsf",
-      "createdAt": "2025-04-02T21:14:18.222Z"
+      "info": "Airdrop berakhir pada 30 Desember 2025",
+      "createdAt": "2025-01-01T00:00:00.000Z"
     }
   ]
 }
