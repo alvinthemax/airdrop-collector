@@ -15,14 +15,7 @@ body {
   min-height: 100vh;
 }
 
-.editorSection {
-  flex: 1;
-  padding: 2rem;
-  background-color: #f8fafc;
-  border-right: 1px solid #e2e8f0;
-  overflow-y: auto;
-  height: calc(100vh - 60px); /* Adjust based on header height */
-}
+
 
 .displaySection {
   flex: 1;
