@@ -19,21 +19,48 @@
 .mainContent {
   display: flex;
   flex: 1;
+  flex-direction: row; /* Default landscape layout */
 }
 
-.editorSection {
-  flex: 1;
-  padding: 2rem;
-  background-color: #f8fafc;
-  border-right: 1px solid #e2e8f0;
-  overflow-y: auto;
-  height: calc(100vh - 60px);
-}
+/* Portrait mode styles */
+@media (orientation: portrait) {
+  .mainContent {
+    flex-direction: column;
+  }
 
+  .editorSection {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    height: auto;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+  
 .displaySection {
-  flex: 2;
-  padding: 2rem;
-  background-color: white;
+    height: auto;
+    flex: 1;
+    overflow-y: auto;
+  }
+}
+/* Landscape mode styles */
+@media (orientation: landscape) {
+  .mainContent {
+    flex-direction: row;
+  }
+
+  .editorSection {
+    flex: 1;
+    border-right: 1px solid #e2e8f0;
+    border-bottom: none;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+  }
+  
+  .displaySection {
+    flex: 1;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+  }
 }
 
 .form {
