@@ -9,6 +9,7 @@ export default function Home() {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [editingId, setEditingId] = useState(null); // Track which item is being edited
 
   // GitHub config
   const repoConfig = {
@@ -40,7 +41,6 @@ export default function Home() {
       }
       
       setItems(content.items);
-      console.log('Data loaded:', content.items);
     } catch (error) {
       console.error('Failed to fetch data:', error);
       setMessage(`Failed to load data: ${error.response?.status === 404 
@@ -67,7 +67,16 @@ export default function Home() {
     setSteps(steps.filter((_, idx) => idx !== stepIndex));
   };
 
-  // Submit handler with proper data validation
+  // Handle edit button click
+  const handleEdit = (item) => {
+    setEditingId(item.createdAt); // Use createdAt as unique identifier
+    setTitle(item.title);
+    setSteps(item.steps.length > 0 ? item.steps : [{ text: '', link: '' }]);
+    setInfo(item.info || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
+  };
+
+  // Submit handler (for both add and edit)
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -96,19 +105,26 @@ export default function Home() {
         title,
         steps: steps.filter(step => step.text.trim() !== ''),
         info,
-        createdAt: new Date().toISOString()
+        createdAt: editingId || new Date().toISOString() // Keep original ID if editing
       };
+
+      // If editing, remove the old version
+      const updatedItems = editingId
+        ? currentContent.items.filter(item => item.createdAt !== editingId)
+        : currentContent.items;
 
       const newContent = {
         ...currentContent,
-        items: [...currentContent.items, newItem]
+        items: [...updatedItems, newItem]
       };
 
       // Update file
       await axios.put(
         `https://api.github.com/repos/${repoConfig.owner}/${repoConfig.repo}/contents/${repoConfig.path}`,
         {
-          message: `Add airdrop: ${title.substring(0, 20)}`,
+          message: editingId 
+            ? `Updated airdrop: ${title.substring(0, 20)}`
+            : `Added airdrop: ${title.substring(0, 20)}`,
           content: btoa(JSON.stringify(newContent, null, 2)),
           sha: currentFile.data.sha,
           branch: repoConfig.branch
@@ -126,14 +142,24 @@ export default function Home() {
       setTitle('');
       setSteps([{ text: '', link: '' }]);
       setInfo('');
+      setEditingId(null);
       await fetchData();
-      setMessage('✅ Airdrop added successfully!');
+      setMessage(editingId ? '✅ Airdrop updated successfully!' : '✅ Airdrop added successfully!');
     } catch (error) {
       console.error('Submission error:', error);
-      setMessage(`❌ Failed to add: ${error.response?.data?.message || error.message}`);
+      setMessage(`❌ Failed to ${editingId ? 'update' : 'add'}: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Cancel edit and reset form
+  const cancelEdit = () => {
+    setEditingId(null);
+    setTitle('');
+    setSteps([{ text: '', link: '' }]);
+    setInfo('');
+    setMessage('');
   };
 
   // Initial data load
@@ -148,10 +174,10 @@ export default function Home() {
       </header>
 
       <div className={styles.mainContent}>
-        {/* Editor Section - will reorder based on orientation */}
+        {/* Editor Section */}
         <div className={styles.editorSection}>
           <form onSubmit={handleSubmit} className={styles.form}>
-            <h2>Add New Airdrop</h2>
+            <h2>{editingId ? 'Edit Airdrop' : 'Add New Airdrop'}</h2>
             
             <div className={styles.formGroup}>
               <label>Title *</label>
@@ -216,13 +242,25 @@ export default function Home() {
               />
             </div>
 
-            <button 
-              type="submit" 
-              className={styles.button}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Submitting...' : 'Add Airdrop'}
-            </button>
+            <div className={styles.buttonGroup}>
+              <button 
+                type="submit" 
+                className={styles.button}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Submitting...' : editingId ? 'Update Airdrop' : 'Add Airdrop'}
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className={`${styles.button} ${styles.cancelButton}`}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
 
           {message && (
@@ -232,7 +270,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Display Section - will reorder based on orientation */}
+        {/* Display Section */}
         <div className={styles.displaySection}>
           <h2>Available Airdrops ({items.length})</h2>
           
@@ -240,7 +278,15 @@ export default function Home() {
             <div className={styles.itemsContainer}>
               {items.map((item, index) => (
                 <div key={index} className={styles.itemCard}>
-                  <h3 className={styles.itemTitle}>{item.title}</h3>
+                  <div className={styles.itemHeader}>
+                    <h3 className={styles.itemTitle}>{item.title}</h3>
+                    <button 
+                      onClick={() => handleEdit(item)}
+                      className={styles.editButton}
+                    >
+                      Edit
+                    </button>
+                  </div>
                   
                   {item.steps?.length > 0 && (
                     <div className={styles.stepsContainer}>
@@ -254,6 +300,7 @@ export default function Home() {
                                 href={step.link} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
+                                className={styles.stepLink}
                               >
                                 (Link)
                               </a>
