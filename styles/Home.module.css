@@ -16,6 +16,13 @@
   font-size: 1.8rem;
 }
 
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
 .mainContent {
   display: flex;
   flex: 1;
@@ -314,4 +321,42 @@
   text-align: center;
   padding: 40px;
   color: #586069;
+}
+
+.editButton {
+  padding: 0.3rem 0.6rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.editButton:hover {
+  background-color: #2563eb;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cancelButton {
+  background-color: #64748b !important;
+}
+
+.cancelButton:hover {
+  background-color: #475569 !important;
+}
+
+.stepLink {
+  color: #3b82f6;
+  margin-left: 0.3rem;
+  text-decoration: none;
+}
+
+.stepLink:hover {
+  text-decoration: underline;
 }
